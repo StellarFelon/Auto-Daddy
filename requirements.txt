@@ -1,0 +1,8 @@
+"""
+Auto Daddy - Requirements File
+
+This file lists all the Python package dependencies required for Auto Daddy.
+"""
+
+google-genai>=0.1.0
+PyQt5>=5.15.0
