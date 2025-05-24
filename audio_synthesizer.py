@@ -96,11 +96,14 @@ class AudioSynthesizer:
             )
             
             # Prepare the content for generation
+            # Prepend an instructive phrase to guide the TTS model's tone and adherence to script cues.
+            instructive_prefix = "Read aloud in a natural, engaging tone, following the speaker cues and any emotional or contextual notes provided in the script:\n\n"
+            prefixed_script = instructive_prefix + script
             contents = [
                 types.Content(
                     role="user",
                     parts=[
-                        types.Part.from_text(text=script),
+                        types.Part.from_text(text=prefixed_script),
                     ],
                 ),
             ]
