@@ -23,12 +23,13 @@ class GenerateAudioThread(QThread):
     finished = pyqtSignal(str)
     progress = pyqtSignal(int)
     
-    def __init__(self, auto_daddy, script, voice, output_filename):
+    def __init__(self, auto_daddy, script, output_filename, speaker1_voice, speaker2_voice):
         super().__init__()
         self.auto_daddy = auto_daddy
         self.script = script
-        self.voice = voice
         self.output_filename = output_filename
+        self.speaker1_voice = speaker1_voice
+        self.speaker2_voice = speaker2_voice
     
     def run(self):
         # Simulate progress updates (since the actual API doesn't provide progress)
@@ -39,8 +40,9 @@ class GenerateAudioThread(QThread):
         # Generate the audio
         result = self.auto_daddy.generate_audio(
             script=self.script,
-            voice=self.voice,
-            output_filename=self.output_filename
+            output_filename=self.output_filename,
+            speaker1_voice=self.speaker1_voice,
+            speaker2_voice=self.speaker2_voice
         )
         
         self.progress.emit(100)  # Complete the progress
@@ -328,7 +330,7 @@ class AutoDaddyUI(QMainWindow):
             script = self.auto_daddy.set_manual_script(script)
             self.script_text.setText(script)  # Update with formatted script
         
-        voice = self.voice_combo.currentText()
+        selected_voice = self.voice_combo.currentText()
         
         # Show progress bar
         self.audio_progress.setValue(0)
@@ -336,12 +338,16 @@ class AutoDaddyUI(QMainWindow):
         self.generate_audio_btn.setEnabled(False)
         self.statusBar().showMessage("Generating audio...")
         
+        # The AutoDaddy backend is designed for two speakers, each with a potentially different voice.
+        # For simplicity in this UI version, we use the single selected voice 
+        # for both speaker1_voice and speaker2_voice.
         # Generate audio in a separate thread
         self.audio_thread = GenerateAudioThread(
             self.auto_daddy,
             script,
-            voice,
-            None  # Use default filename
+            None,  # Use default filename
+            speaker1_voice=selected_voice,
+            speaker2_voice=selected_voice
         )
         self.audio_thread.progress.connect(self.audio_progress.setValue)
         self.audio_thread.finished.connect(self.on_audio_generated)
