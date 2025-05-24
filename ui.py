@@ -23,13 +23,25 @@ class GenerateAudioThread(QThread):
     finished = pyqtSignal(str)
     progress = pyqtSignal(int)
     
-    def __init__(self, auto_daddy, script, output_filename, speaker1_voice, speaker2_voice):
+    def __init__(self, auto_daddy, script, output_filename, speaker1_voice, speaker2_voice, tts_model_name):
+        """
+        Initialize the audio generation thread.
+
+        Args:
+            auto_daddy: Instance of the AutoDaddy backend.
+            script (str): The script text to synthesize.
+            output_filename (str): Path to save the output audio file.
+            speaker1_voice (str): Voice for Speaker 1.
+            speaker2_voice (str): Voice for Speaker 2.
+            tts_model_name (str): Name of the TTS model to use.
+        """
         super().__init__()
         self.auto_daddy = auto_daddy
         self.script = script
         self.output_filename = output_filename
         self.speaker1_voice = speaker1_voice
         self.speaker2_voice = speaker2_voice
+        self.tts_model_name = tts_model_name
     
     def run(self):
         # Simulate progress updates (since the actual API doesn't provide progress)
@@ -42,7 +54,8 @@ class GenerateAudioThread(QThread):
             script=self.script,
             output_filename=self.output_filename,
             speaker1_voice=self.speaker1_voice,
-            speaker2_voice=self.speaker2_voice
+            speaker2_voice=self.speaker2_voice,
+            tts_model_name=self.tts_model_name
         )
         
         self.progress.emit(100)  # Complete the progress
@@ -223,13 +236,29 @@ class AutoDaddyUI(QMainWindow):
         audio_group = QGroupBox("Audio Generation")
         audio_layout = QVBoxLayout()
         
-        # Voice selection
-        voice_layout = QHBoxLayout()
-        voice_layout.addWidget(QLabel("Voice:"))
-        self.voice_combo = QComboBox()
-        self.voice_combo.addItems(self.auto_daddy.get_available_voices())
-        voice_layout.addWidget(self.voice_combo)
-        audio_layout.addLayout(voice_layout)
+        # TTS Model selection
+        model_layout = QHBoxLayout()
+        model_layout.addWidget(QLabel("TTS Model:"))
+        self.model_combo = QComboBox()
+        self.model_combo.addItems(["gemini-2.5-pro-preview-tts", "gemini-2.5-flash-preview-tts"])
+        model_layout.addWidget(self.model_combo)
+        audio_layout.addLayout(model_layout)
+        
+        # Speaker 1 Voice selection
+        speaker1_voice_layout = QHBoxLayout()
+        speaker1_voice_layout.addWidget(QLabel("Speaker 1 Voice:"))
+        self.speaker1_voice_combo = QComboBox()
+        self.speaker1_voice_combo.addItems(self.auto_daddy.get_available_voices())
+        speaker1_voice_layout.addWidget(self.speaker1_voice_combo)
+        audio_layout.addLayout(speaker1_voice_layout)
+        
+        # Speaker 2 Voice selection
+        speaker2_voice_layout = QHBoxLayout()
+        speaker2_voice_layout.addWidget(QLabel("Speaker 2 Voice:"))
+        self.speaker2_voice_combo = QComboBox()
+        self.speaker2_voice_combo.addItems(self.auto_daddy.get_available_voices())
+        speaker2_voice_layout.addWidget(self.speaker2_voice_combo)
+        audio_layout.addLayout(speaker2_voice_layout)
         
         # Generate audio button
         audio_btn_layout = QHBoxLayout()
@@ -330,7 +359,9 @@ class AutoDaddyUI(QMainWindow):
             script = self.auto_daddy.set_manual_script(script)
             self.script_text.setText(script)  # Update with formatted script
         
-        selected_voice = self.voice_combo.currentText()
+        tts_model = self.model_combo.currentText()
+        s1_voice = self.speaker1_voice_combo.currentText()
+        s2_voice = self.speaker2_voice_combo.currentText()
         
         # Show progress bar
         self.audio_progress.setValue(0)
@@ -338,16 +369,14 @@ class AutoDaddyUI(QMainWindow):
         self.generate_audio_btn.setEnabled(False)
         self.statusBar().showMessage("Generating audio...")
         
-        # The AutoDaddy backend is designed for two speakers, each with a potentially different voice.
-        # For simplicity in this UI version, we use the single selected voice 
-        # for both speaker1_voice and speaker2_voice.
         # Generate audio in a separate thread
         self.audio_thread = GenerateAudioThread(
             self.auto_daddy,
             script,
             None,  # Use default filename
-            speaker1_voice=selected_voice,
-            speaker2_voice=selected_voice
+            speaker1_voice=s1_voice,
+            speaker2_voice=s2_voice,
+            tts_model_name=tts_model
         )
         self.audio_thread.progress.connect(self.audio_progress.setValue)
         self.audio_thread.finished.connect(self.on_audio_generated)

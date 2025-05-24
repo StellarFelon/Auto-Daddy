@@ -30,7 +30,6 @@ class AudioSynthesizer:
             raise ValueError("Gemini API key is required. Set GEMINI_API_KEY environment variable or pass as parameter.")
         
         self.client = genai.Client(api_key=self.api_key)
-        self.model = "gemini-2.5-pro-preview-tts"  # Using the TTS-enabled model
         
         # Default voice configurations
         self.default_voice = "Enceladus"  # Warm, comforting voice suitable for "daddy" ASMR
@@ -41,13 +40,14 @@ class AudioSynthesizer:
             "Io"          # Soft, nurturing voice
         ]
     
-    def synthesize_audio(self, script, output_file, speaker1_name="Speaker1", speaker1_voice="Enceladus", speaker2_name="Speaker2", speaker2_voice="Puck"):
+    def synthesize_audio(self, script, output_file, model_name, speaker1_name="Speaker1", speaker1_voice="Enceladus", speaker2_name="Speaker2", speaker2_voice="Puck"):
         """
         Synthesize audio from the provided script for two speakers.
         
         Args:
             script (str): The script text with speaker annotations (e.g., "Speaker1:", "Speaker2:")
             output_file (str): Path to save the output audio file
+            model_name (str): Name of the TTS model to use, like 'gemini-2.5-pro-preview-tts' or 'gemini-2.5-flash-preview-tts'.
             speaker1_name (str): Name/identifier for Speaker 1 in the script
             speaker1_voice (str): Voice to use for Speaker 1
             speaker2_name (str): Name/identifier for Speaker 2 in the script
@@ -108,7 +108,7 @@ class AudioSynthesizer:
             # Generate the audio content
             audio_data = None
             for chunk in self.client.models.generate_content_stream(
-                model=self.model,
+                model=model_name,
                 contents=contents,
                 config=generate_content_config,
             ):
@@ -259,6 +259,7 @@ if __name__ == "__main__":
     output_path = synthesizer.synthesize_audio(
         test_script, 
         "test_multi_speaker_output.wav",
+        model_name="gemini-2.5-flash-preview-tts",
         speaker1_name="Alex",
         speaker1_voice="Enceladus", # Or any from available_voices
         speaker2_name="Jordan",
