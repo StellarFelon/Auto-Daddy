@@ -78,12 +78,13 @@ class AutoDaddy:
         self.current_script = script_text
         return self.current_script
     
-    def generate_audio(self, script=None, speaker1_name="Speaker1", speaker1_voice="Enceladus", speaker2_name="Speaker2", speaker2_voice="Puck", output_filename=None):
+    def generate_audio(self, script=None, tts_model_name="gemini-2.5-pro-preview-tts", speaker1_name="Speaker1", speaker1_voice="Enceladus", speaker2_name="Speaker2", speaker2_voice="Puck", output_filename=None):
         """
         Generate audio from the current or provided script for two speakers.
         
         Args:
             script (str, optional): Script to use. If None, uses current_script.
+            tts_model_name (str): Name of the TTS model to use (e.g., "gemini-2.5-pro-preview-tts", "gemini-2.5-flash-preview-tts").
             speaker1_name (str): Name/identifier for Speaker 1 in the script.
             speaker1_voice (str): Voice to use for Speaker 1.
             speaker2_name (str): Name/identifier for Speaker 2 in the script.
@@ -110,6 +111,7 @@ class AutoDaddy:
         self.current_audio_path = self.audio_synthesizer.synthesize_audio(
             script=script_to_use,
             output_file=output_path,
+            model_name=tts_model_name,
             speaker1_name=speaker1_name,
             speaker1_voice=speaker1_voice,
             speaker2_name=speaker2_name,
@@ -193,6 +195,7 @@ if __name__ == "__main__":
     if not script.startswith("Error"): # Proceed only if script generation was successful
         print(f"Generating two-speaker audio with voices {s1_voice} for {s1_name} and {s2_voice} for {s2_name}...")
         audio_path = auto_daddy.generate_audio(
+                tts_model_name="gemini-2.5-flash-preview-tts",
             speaker1_name=s1_name,
             speaker1_voice=s1_voice,
             speaker2_name=s2_name,
