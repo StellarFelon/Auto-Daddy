@@ -1,0 +1,1 @@
+Unexpected error generating script (TypeError): Models.generate_content() got an unexpected keyword argument 'temperature'

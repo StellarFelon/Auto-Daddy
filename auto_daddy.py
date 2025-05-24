@@ -39,14 +39,16 @@ class AutoDaddy:
         self.current_script = None
         self.current_audio_path = None
     
-    def generate_script(self, theme="comforting", length="medium", custom_prompt=None):
+    def generate_script(self, theme="comforting", length="medium", custom_prompt=None, speaker1_name="Speaker1", speaker2_name="Speaker2"):
         """
-        Generate an ASMR daddy script using the text generator.
+        Generate an ASMR script using the text generator for two speakers.
         
         Args:
             theme (str): Theme for the ASMR content
             length (str): Desired script length ("short", "medium", "long", "very long")
             custom_prompt (str, optional): Custom prompt to override default
+            speaker1_name (str): Name for Speaker 1
+            speaker2_name (str): Name for Speaker 2
             
         Returns:
             str: Generated script
@@ -54,7 +56,9 @@ class AutoDaddy:
         self.current_script = self.text_generator.generate_script(
             theme=theme,
             length=length,
-            custom_prompt=custom_prompt
+            custom_prompt=custom_prompt,
+            speaker1_name=speaker1_name,
+            speaker2_name=speaker2_name
         )
         return self.current_script
     
@@ -63,38 +67,27 @@ class AutoDaddy:
         Set a manually created script.
         
         Args:
-            script_text (str): The manually created script text
+            script_text (str): The manually created script text.
+                               Users should ensure it's formatted correctly for two speakers if intended.
             
         Returns:
-            str: Formatted script with proper speaker annotations
+            str: The script text as set.
         """
-        # Ensure script has proper speaker annotations
-        if script_text and "Speaker 1:" not in script_text:
-            lines = script_text.split('\n')
-            formatted_lines = []
-            
-            for line in lines:
-                if line.strip():
-                    if not line.startswith("Speaker 1:"):
-                        formatted_lines.append(f"Speaker 1: {line}")
-                    else:
-                        formatted_lines.append(line)
-                else:
-                    formatted_lines.append(line)  # Keep empty lines
-                    
-            self.current_script = '\n'.join(formatted_lines)
-        else:
-            self.current_script = script_text
-            
+        # Removed automatic "Speaker 1:" prepending. 
+        # Users providing manual scripts are responsible for their formatting.
+        self.current_script = script_text
         return self.current_script
     
-    def generate_audio(self, script=None, voice=None, output_filename=None):
+    def generate_audio(self, script=None, speaker1_name="Speaker1", speaker1_voice="Enceladus", speaker2_name="Speaker2", speaker2_voice="Puck", output_filename=None):
         """
-        Generate audio from the current or provided script.
+        Generate audio from the current or provided script for two speakers.
         
         Args:
             script (str, optional): Script to use. If None, uses current_script.
-            voice (str, optional): Voice to use. If None, uses default.
+            speaker1_name (str): Name/identifier for Speaker 1 in the script.
+            speaker1_voice (str): Voice to use for Speaker 1.
+            speaker2_name (str): Name/identifier for Speaker 2 in the script.
+            speaker2_voice (str): Voice to use for Speaker 2.
             output_filename (str, optional): Custom filename. If None, generates one.
             
         Returns:
@@ -117,7 +110,10 @@ class AutoDaddy:
         self.current_audio_path = self.audio_synthesizer.synthesize_audio(
             script=script_to_use,
             output_file=output_path,
-            voice=voice
+            speaker1_name=speaker1_name,
+            speaker1_voice=speaker1_voice,
+            speaker2_name=speaker2_name,
+            speaker2_voice=speaker2_voice
         )
         
         return self.current_audio_path
@@ -176,16 +172,35 @@ if __name__ == "__main__":
     
     # Create Auto Daddy instance
     auto_daddy = AutoDaddy(api_key=api_key)
+
+    # Define speaker names and voices for the test
+    s1_name = "Gojo"
+    s1_voice = "Enceladus"  # Assuming "Enceladus" is in available_voices
+    s2_name = "Twink"
+    s2_voice = "Puck"     # Assuming "Puck" is in available_voices
     
-    # Test script generation
-    print("Generating script...")
-    script = auto_daddy.generate_script(theme="bedtime relaxation", length="short")
+    # Test script generation for two speakers
+    print(f"Generating two-speaker script for {s1_name} and {s2_name}...")
+    script = auto_daddy.generate_script(
+        theme="a tense confrontation", 
+        length="medium",
+        speaker1_name=s1_name,
+        speaker2_name=s2_name
+    )
     print(f"Script generated:\n{script}\n")
     
-    # Test audio generation
-    print("Generating audio...")
-    audio_path = auto_daddy.generate_audio()
-    print(f"Audio generated: {audio_path}")
+    # Test audio generation for two speakers
+    if not script.startswith("Error"): # Proceed only if script generation was successful
+        print(f"Generating two-speaker audio with voices {s1_voice} for {s1_name} and {s2_voice} for {s2_name}...")
+        audio_path = auto_daddy.generate_audio(
+            speaker1_name=s1_name,
+            speaker1_voice=s1_voice,
+            speaker2_name=s2_name,
+            speaker2_voice=s2_voice
+        )
+        print(f"Audio generated: {audio_path}")
+    else:
+        print("Skipping audio generation due to script generation error.")
     
     # Test script saving
     script_path = auto_daddy.save_script()
