@@ -12,6 +12,7 @@ import re
 import struct
 from google import genai
 from google.genai import types
+from google.api_core import exceptions as google_exceptions
 
 
 class AudioSynthesizer:
@@ -40,14 +41,17 @@ class AudioSynthesizer:
             "Io"          # Soft, nurturing voice
         ]
     
-    def synthesize_audio(self, script, output_file, voice=None):
+    def synthesize_audio(self, script, output_file, speaker1_name="Speaker1", speaker1_voice="Enceladus", speaker2_name="Speaker2", speaker2_voice="Puck"):
         """
-        Synthesize audio from the provided script.
+        Synthesize audio from the provided script for two speakers.
         
         Args:
-            script (str): The script text with speaker annotations
+            script (str): The script text with speaker annotations (e.g., "Speaker1:", "Speaker2:")
             output_file (str): Path to save the output audio file
-            voice (str, optional): Voice name to use. If None, uses default voice.
+            speaker1_name (str): Name/identifier for Speaker 1 in the script
+            speaker1_voice (str): Voice to use for Speaker 1
+            speaker2_name (str): Name/identifier for Speaker 2 in the script
+            speaker2_voice (str): Voice to use for Speaker 2
             
         Returns:
             str: Path to the saved audio file or error message
@@ -55,22 +59,34 @@ class AudioSynthesizer:
         if not script:
             return "Error: Empty script provided"
         
-        # Use specified voice or default
-        selected_voice = voice if voice in self.available_voices else self.default_voice
-        
+        # Ensure speaker1_voice and speaker2_voice are valid, or use defaults
+        s1_voice = speaker1_voice if speaker1_voice in self.available_voices else self.default_voice
+        s2_voice = speaker2_voice if speaker2_voice in self.available_voices else self.default_voice # Or a different default like Puck
+        if speaker2_voice not in self.available_voices and self.default_voice == s2_voice : # ensure different default if s1 also defaulted
+             available_defaults = [v for v in self.available_voices if v != s1_voice]
+             s2_voice = available_defaults[0] if available_defaults else s1_voice # fallback to s1_voice if no other default
+
         try:
-            # Configure the speech generation
+            # Configure the speech generation for multi-speaker
             generate_content_config = types.GenerateContentConfig(
-                temperature=1,
+                temperature=1, 
                 response_modalities=["audio"],
                 speech_config=types.SpeechConfig(
                     multi_speaker_voice_config=types.MultiSpeakerVoiceConfig(
                         speaker_voice_configs=[
                             types.SpeakerVoiceConfig(
-                                speaker="Speaker 1",
+                                speaker=speaker1_name,
                                 voice_config=types.VoiceConfig(
                                     prebuilt_voice_config=types.PrebuiltVoiceConfig(
-                                        voice_name=selected_voice
+                                        voice_name=s1_voice
+                                    )
+                                ),
+                            ),
+                            types.SpeakerVoiceConfig(
+                                speaker=speaker2_name,
+                                voice_config=types.VoiceConfig(
+                                    prebuilt_voice_config=types.PrebuiltVoiceConfig(
+                                        voice_name=s2_voice
                                     )
                                 ),
                             ),
@@ -125,9 +141,13 @@ class AudioSynthesizer:
                 return output_file
             else:
                 return "Error: No audio data generated"
-                
+
+        except google_exceptions.InvalidArgument as e:
+            return f"API Invalid Argument error synthesizing audio ({type(e).__name__}): {str(e)}"
+        except google_exceptions.GoogleAPIError as e:
+            return f"Google API Error synthesizing audio ({type(e).__name__}): {str(e)}"
         except Exception as e:
-            return f"Error synthesizing audio: {str(e)}"
+            return f"Unexpected error synthesizing audio ({type(e).__name__}): {str(e)}"
     
     def _save_binary_file(self, file_name, data):
         """
@@ -227,13 +247,21 @@ if __name__ == "__main__":
         print("Please provide a Gemini API key as argument or set GEMINI_API_KEY environment variable")
         sys.exit(1)
     
-    # Example script
+    # Example script for two speakers
     test_script = """
-    Speaker 1: Hello there. I'm here to help you relax and unwind after your long day. [soft laugh]
-    Speaker 1: You've been working so hard, and I'm proud of you for that. [pause]
-    Speaker 1: Now it's time to let go of all that stress and just focus on my voice.
+    Alex: Hi Jordan, how are you today? [pause]
+    Jordan: I'm doing great, Alex! Thanks for asking. Just enjoying the sunshine. [soft laugh]
+    Alex: That's wonderful to hear. Sunshine always lifts the spirits.
+    Jordan: It really does. What are you up to?
     """
     
     synthesizer = AudioSynthesizer(api_key)
-    output_path = synthesizer.synthesize_audio(test_script, "test_output.wav")
+    output_path = synthesizer.synthesize_audio(
+        test_script, 
+        "test_multi_speaker_output.wav",
+        speaker1_name="Alex",
+        speaker1_voice="Enceladus", # Or any from available_voices
+        speaker2_name="Jordan",
+        speaker2_voice="Puck"    # Or any from available_voices
+    )
     print(f"Audio saved to: {output_path}")

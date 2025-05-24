@@ -8,6 +8,7 @@ It includes functionality for script length customization and prompt engineering
 import os
 from google import genai
 from google.genai import types
+from google.api_core import exceptions as google_exceptions
 
 class GeminiTextGenerator:
     """Class for generating ASMR daddy scripts using Gemini 2.5 API."""
@@ -24,19 +25,21 @@ class GeminiTextGenerator:
             raise ValueError("Gemini API key is required. Set GEMINI_API_KEY environment variable or pass as parameter.")
         
         self.client = genai.Client(api_key=self.api_key)
-        self.model = "gemini-2.5-flash-preview"  # Using the Flash Preview model
+        self.model = "gemini-2.5-flash-preview-05-20" # Updated model name
     
-    def generate_script(self, theme="comforting", length="medium", custom_prompt=None):
+    def generate_script(self, theme="comforting", length="medium", custom_prompt=None, speaker1_name="Daddy", speaker2_name="Listener"):
         """
-        Generate an ASMR daddy script based on theme and desired length.
+        Generate an ASMR script based on theme, desired length, and speaker names.
         
         Args:
-            theme (str): Theme for the ASMR content (e.g., "comforting", "sleep aid", "relaxation")
+            theme (str): Theme for the ASMR content
             length (str): Desired script length ("short", "medium", "long")
-            custom_prompt (str, optional): Custom prompt to override the default prompt engineering
+            custom_prompt (str, optional): Custom prompt to override default
+            speaker1_name (str): Name of the first speaker
+            speaker2_name (str): Name of the second speaker
             
         Returns:
-            str: Generated script with speaker annotations
+            str: Generated script
         """
         # Map length to approximate word count
         length_map = {
@@ -52,84 +55,78 @@ class GeminiTextGenerator:
         if custom_prompt:
             prompt = custom_prompt
         else:
-            prompt = self._create_prompt(theme, word_count)
+            prompt = self._create_prompt(theme, word_count, speaker1_name, speaker2_name)
         
         # Generate content using Gemini
         try:
-            response = self.client.models.generate_content(
-                model=self.model,
-                contents=[types.Content(
-                    role="user",
-                    parts=[types.Part.from_text(text=prompt)]
-                )],
-                generation_config=types.GenerationConfig(
-                    temperature=0.7,
-                    max_output_tokens=1024,
-                    top_p=0.95,
-                )
+            contents_payload = [types.Content(
+                role="user",
+                parts=[types.Part.from_text(text=prompt)]
+            )]
+
+            current_generate_content_config = types.GenerateContentConfig(
+                response_mime_type="text/plain"
             )
+            try:
+                current_generate_content_config.thinking_config = types.ThinkingConfig(thinking_budget=0)
+            except AttributeError:
+                # If types.ThinkingConfig doesn't exist or cannot be set, proceed without it
+                pass
+
+            script_parts = []
+            for chunk in self.client.models.generate_content_stream(
+                model=self.model,
+                contents=contents_payload,
+                config=current_generate_content_config,
+            ):
+                if chunk.text: # Ensure text exists
+                    script_parts.append(chunk.text)
             
-            # Extract and format the generated script
-            script = response.text
-            return self._format_script(script)
-            
+            raw_script = "".join(script_parts)
+            return self._format_script(raw_script) # Or just return raw_script
+
+        except google_exceptions.InvalidArgument as e:
+            return f"API Invalid Argument error generating script ({type(e).__name__}): {str(e)}"
+        except google_exceptions.GoogleAPIError as e:
+            return f"Google API Error generating script ({type(e).__name__}): {str(e)}"
         except Exception as e:
-            return f"Error generating script: {str(e)}"
+            return f"Unexpected error generating script ({type(e).__name__}): {str(e)}"
     
-    def _create_prompt(self, theme, word_count):
+    def _create_prompt(self, theme, word_count, speaker1_name, speaker2_name):
         """
-        Create a prompt for Gemini based on theme and word count.
+        Create a prompt for Gemini based on theme, word count, and speaker names.
         
         Args:
             theme (str): Theme for the ASMR content
             word_count (int): Target word count for the script
+            speaker1_name (str): Name of the first speaker
+            speaker2_name (str): Name of the second speaker
             
         Returns:
             str: Formatted prompt for Gemini
         """
         return f"""
-        Create an ASMR daddy script with a warm, comforting tone on the theme of "{theme}".
-        
-        The script should be approximately {word_count} words long and formatted as a dialogue 
-        with a single speaker (Speaker 1) who is the "daddy" character.
-        
-        Format the script with "Speaker 1:" prefix before each paragraph of dialogue.
-        
-        The tone should be gentle, reassuring, and caring - typical of ASMR "daddy" content.
-        Include appropriate pauses indicated by "[pause]" and soft sounds like "[soft laugh]" 
-        or "[gentle sigh]" where appropriate.
-        
-        Make sure the content is soothing, appropriate for relaxation, and follows a natural 
-        conversational flow as if speaking directly to the listener.
+        Create an ASMR script with a {theme} tone, approximately {word_count} words long.
+        The script should be a dialogue between two speakers: {speaker1_name} and {speaker2_name}.
+        Format the script with '{speaker1_name}:' and '{speaker2_name}:' prefixes before each respective line of dialogue.
+        Include appropriate pauses like [pause] and soft sounds like [soft laugh] where suitable.
+        The content should be soothing and appropriate for relaxation.
+        Ensure a natural conversational flow.
         """
     
     def _format_script(self, raw_script):
         """
-        Format the raw generated script to ensure proper speaker annotations.
+        Formats the raw generated script.
+        For now, it returns the script as is, relying on prompt engineering for formatting.
         
         Args:
             raw_script (str): Raw script from Gemini
             
         Returns:
-            str: Properly formatted script
+            str: Formatted script (currently, the raw script)
         """
-        # Ensure script has proper speaker annotations
-        if "Speaker 1:" not in raw_script:
-            # Add speaker annotation if missing
-            lines = raw_script.split('\n')
-            formatted_lines = []
-            
-            for line in lines:
-                if line.strip():
-                    if not line.startswith("Speaker 1:"):
-                        formatted_lines.append(f"Speaker 1: {line}")
-                    else:
-                        formatted_lines.append(line)
-                else:
-                    formatted_lines.append(line)  # Keep empty lines
-                    
-            return '\n'.join(formatted_lines)
-        
+        # Simplified: Return raw script, relying on prompt for formatting.
+        # Future enhancements could add more robust formatting if needed.
         return raw_script
 
 
@@ -148,5 +145,11 @@ if __name__ == "__main__":
         sys.exit(1)
     
     generator = GeminiTextGenerator(api_key)
-    script = generator.generate_script(theme="bedtime relaxation", length="short")
+    # Example for 2-speaker script
+    script = generator.generate_script(
+        theme="a friendly chat", 
+        length="short", 
+        speaker1_name="Alex", 
+        speaker2_name="Jordan"
+    )
     print(script)
