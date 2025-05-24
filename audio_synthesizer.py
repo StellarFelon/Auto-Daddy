@@ -34,10 +34,36 @@ class AudioSynthesizer:
         # Default voice configurations
         self.default_voice = "Enceladus"  # Warm, comforting voice suitable for "daddy" ASMR
         self.available_voices = [
-            "Enceladus",  # Warm, deep voice
-            "Puck",       # Gentle, soothing voice
-            "Ceres",      # Calm, reassuring voice
-            "Io"          # Soft, nurturing voice
+            "Zephyr",     # Bright
+            "Puck",       # Upbeat
+            "Charon",     # Informative
+            "Kore",       # Firm
+            "Fenrir",     # Excitable
+            "Leda",       # Youthful
+            "Orus",       # Firm
+            "Aoede",      # Breezy
+            "Callirhoe",  # Easy-going
+            "Autonoe",    # Bright
+            "Enceladus",  # Breathy
+            "Iapetus",    # Clear
+            "Umbriel",    # Easy-going
+            "Algieba",    # Smooth
+            "Despina",    # Smooth
+            "Erinome",    # Clear
+            "Algenib",    # Gravelly
+            "Rasalgethi", # Informative
+            "Laomedeia",  # Upbeat
+            "Achernar",   # Soft
+            "Alnilam",    # Firm
+            "Schedar",    # Even
+            "Gacrux",     # Mature
+            "Pulcherrima",# Forward
+            "Achird",     # Friendly
+            "Zubenelgenubi",# Casual
+            "Vindemiatrix",# Gentle
+            "Sadachbia",  # Lively
+            "Sadaltager", # Knowledgeable
+            "Sulafar"     # Warm
         ]
     
     def synthesize_audio(self, script, output_file, model_name, speaker1_name="Speaker1", speaker1_voice="Enceladus", speaker2_name="Speaker2", speaker2_voice="Puck"):
