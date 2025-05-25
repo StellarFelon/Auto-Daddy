@@ -23,7 +23,7 @@ class GenerateAudioThread(QThread):
     finished = pyqtSignal(str)
     progress = pyqtSignal(int)
     
-    def __init__(self, auto_daddy, script, output_filename, speaker1_voice, speaker2_voice, tts_model_name):
+    def __init__(self, auto_daddy, script, output_filename, speaker1_voice, speaker2_voice, tts_model_name, instructive_prefix):
         """
         Initialize the audio generation thread.
 
@@ -34,6 +34,7 @@ class GenerateAudioThread(QThread):
             speaker1_voice (str): Voice for Speaker 1.
             speaker2_voice (str): Voice for Speaker 2.
             tts_model_name (str): Name of the TTS model to use.
+            instructive_prefix (str): Text to prepend to the script to guide TTS model tone.
         """
         super().__init__()
         self.auto_daddy = auto_daddy
@@ -42,6 +43,7 @@ class GenerateAudioThread(QThread):
         self.speaker1_voice = speaker1_voice
         self.speaker2_voice = speaker2_voice
         self.tts_model_name = tts_model_name
+        self.instructive_prefix = instructive_prefix
     
     def run(self):
         # Simulate progress updates (since the actual API doesn't provide progress)
@@ -55,7 +57,8 @@ class GenerateAudioThread(QThread):
             output_filename=self.output_filename,
             speaker1_voice=self.speaker1_voice,
             speaker2_voice=self.speaker2_voice,
-            tts_model_name=self.tts_model_name
+            tts_model_name=self.tts_model_name,
+            instructive_prefix=self.instructive_prefix
         )
         
         self.progress.emit(100)  # Complete the progress
@@ -235,6 +238,15 @@ class AutoDaddyUI(QMainWindow):
         # Create audio generation section
         audio_group = QGroupBox("Audio Generation")
         audio_layout = QVBoxLayout()
+
+        # Instructive Prefix Input
+        prefix_layout = QHBoxLayout()
+        prefix_layout.addWidget(QLabel("Instructive Prefix:"))
+        self.instructive_prefix_input = QLineEdit()
+        self.instructive_prefix_input.setText("Read aloud in a natural, engaging tone, following the speaker cues and any emotional or contextual notes provided in the script:\n\n") # Default value
+        self.instructive_prefix_input.setPlaceholderText("Enter prefix to guide TTS model tone...")
+        prefix_layout.addWidget(self.instructive_prefix_input)
+        audio_layout.addLayout(prefix_layout)
         
         # TTS Model selection
         model_layout = QHBoxLayout()
@@ -362,6 +374,7 @@ class AutoDaddyUI(QMainWindow):
         tts_model = self.model_combo.currentText()
         s1_voice = self.speaker1_voice_combo.currentText()
         s2_voice = self.speaker2_voice_combo.currentText()
+        instructive_prefix = self.instructive_prefix_input.text()
         
         # Show progress bar
         self.audio_progress.setValue(0)
@@ -376,7 +389,8 @@ class AutoDaddyUI(QMainWindow):
             None,  # Use default filename
             speaker1_voice=s1_voice,
             speaker2_voice=s2_voice,
-            tts_model_name=tts_model
+            tts_model_name=tts_model,
+            instructive_prefix=instructive_prefix
         )
         self.audio_thread.progress.connect(self.audio_progress.setValue)
         self.audio_thread.finished.connect(self.on_audio_generated)

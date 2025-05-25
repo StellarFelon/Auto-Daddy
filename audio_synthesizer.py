@@ -66,7 +66,7 @@ class AudioSynthesizer:
             "Sulafar"     # Warm
         ]
     
-    def synthesize_audio(self, script, output_file, model_name, speaker1_name="Speaker1", speaker1_voice="Enceladus", speaker2_name="Speaker2", speaker2_voice="Puck"):
+    def synthesize_audio(self, script, output_file, model_name, speaker1_name="Speaker1", speaker1_voice="Enceladus", speaker2_name="Speaker2", speaker2_voice="Puck", instructive_prefix="Read aloud in a natural, engaging tone, following the speaker cues and any emotional or contextual notes provided in the script:\n\n"):
         """
         Synthesize audio from the provided script for two speakers.
         
@@ -78,6 +78,7 @@ class AudioSynthesizer:
             speaker1_voice (str): Voice to use for Speaker 1
             speaker2_name (str): Name/identifier for Speaker 2 in the script
             speaker2_voice (str): Voice to use for Speaker 2
+            instructive_prefix (str): Text to prepend to the script to guide TTS model tone.
             
         Returns:
             str: Path to the saved audio file or error message
@@ -123,7 +124,6 @@ class AudioSynthesizer:
             
             # Prepare the content for generation
             # Prepend an instructive phrase to guide the TTS model's tone and adherence to script cues.
-            instructive_prefix = "Read aloud in a natural, engaging tone, following the speaker cues and any emotional or contextual notes provided in the script:\n\n"
             prefixed_script = instructive_prefix + script
             contents = [
                 types.Content(

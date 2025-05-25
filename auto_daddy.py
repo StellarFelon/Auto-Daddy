@@ -78,7 +78,7 @@ class AutoDaddy:
         self.current_script = script_text
         return self.current_script
     
-    def generate_audio(self, script=None, tts_model_name="gemini-2.5-pro-preview-tts", speaker1_name="Speaker1", speaker1_voice="Enceladus", speaker2_name="Speaker2", speaker2_voice="Puck", output_filename=None):
+    def generate_audio(self, script=None, tts_model_name="gemini-2.5-pro-preview-tts", speaker1_name="Speaker1", speaker1_voice="Enceladus", speaker2_name="Speaker2", speaker2_voice="Puck", output_filename=None, instructive_prefix="Read aloud in a natural, engaging tone, following the speaker cues and any emotional or contextual notes provided in the script:\n\n"):
         """
         Generate audio from the current or provided script for two speakers.
         
@@ -90,6 +90,7 @@ class AutoDaddy:
             speaker2_name (str): Name/identifier for Speaker 2 in the script.
             speaker2_voice (str): Voice to use for Speaker 2.
             output_filename (str, optional): Custom filename. If None, generates one.
+            instructive_prefix (str): Text to prepend to the script to guide TTS model tone.
             
         Returns:
             str: Path to the generated audio file or error message
@@ -115,7 +116,8 @@ class AutoDaddy:
             speaker1_name=speaker1_name,
             speaker1_voice=speaker1_voice,
             speaker2_name=speaker2_name,
-            speaker2_voice=speaker2_voice
+            speaker2_voice=speaker2_voice,
+            instructive_prefix=instructive_prefix
         )
         
         return self.current_audio_path
